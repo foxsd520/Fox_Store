@@ -815,6 +815,32 @@ const handlePhoneSignIn = async (e: FormEvent) => {
               </div>
 
               <div className="md:col-span-2 space-y-8">
+                {/* PWA Installation Info Card */}
+                <div className="bg-neutral-900 border border-fox-orange/20 rounded-3xl p-6 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-fox-orange/10 blur-3xl rounded-full" />
+                  <div className="relative flex items-start gap-4">
+                    <div className="bg-fox-orange/10 p-3 rounded-2xl">
+                      <Smartphone className="text-fox-orange" size={32} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white mb-2">ثبّت المتجر كـ تطبيقAPK على هاتفك</h3>
+                      <p className="text-sm text-neutral-400 mb-4 leading-relaxed">
+                        استمتع بتجربة أسرع وسهولة في الوصول من خلال تثبيت المتجر على شاشة هاتفك الرئيسية.
+                      </p>
+                      <div className="flex flex-wrap gap-4 text-xs">
+                        <div className="flex items-center gap-2 text-neutral-500">
+                          <div className="w-5 h-5 bg-neutral-800 rounded-full flex items-center justify-center text-[10px] text-white">1</div>
+                          <span>افتح القائمة (⋮) في المتصفح</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-neutral-500">
+                          <div className="w-5 h-5 bg-neutral-800 rounded-full flex items-center justify-center text-[10px] text-white">2</div>
+                          <span>اختر "تثبيت التطبيق" أو "Install App"</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-8 overflow-hidden relative">
                    <div className="absolute top-0 right-0 w-32 h-32 bg-fox-orange/5 blur-3xl rounded-full" />
                    <h3 className="text-xl font-bold text-white mb-6">إعدادات الحساب</h3>
