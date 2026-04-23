@@ -44,7 +44,8 @@ import {
   auth, 
   db, 
   googleProvider,
-  storage
+  storage,
+  testFirestoreConnection
 } from './services/firebase';
 import { 
   signInWithPopup, 
@@ -68,7 +69,9 @@ import {
   deleteDoc, 
   updateDoc, 
   increment,
-  limit
+  limit,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 
 export default function App() {
@@ -79,6 +82,7 @@ export default function App() {
   const [view, setView] = useState<'store' | 'messages' | 'profile' | 'admin' | 'upload'>('store');
   const [authView, setAuthView] = useState<'login' | 'register' | 'phone'>('login');
   const [isLoading, setIsLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // Search and Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,6 +99,15 @@ export default function App() {
 
   // Sync Auth State
   useEffect(() => {
+    // Initial connection test
+    const checkConnection = async () => {
+      const result = await testFirestoreConnection();
+      if (!result.success) {
+        setConnectionError("تعذر الاتصال بقاعدة البيانات. قد يكون اتصال الإنترنت ضعيفاً.");
+      }
+    };
+    checkConnection();
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
         const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
@@ -133,7 +146,7 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const appId = params.get('app');
     
-    const qApps = query(collection(db, 'apps'), orderBy('createdAt', 'desc'));
+    const qApps = query(collection(db, 'apps'), orderBy('createdAt', 'desc'), limit(60));
     const unsubApps = onSnapshot(qApps, (s) => {
       const fetchedApps = s.docs.map(d => ({ ...d.data(), id: d.id } as AppEntry));
       setApps(fetchedApps);
@@ -166,7 +179,8 @@ export default function App() {
       const qMsgs = query(
         collection(db, 'messages'), 
         where('receiverId', '==', currentUser.id), 
-        orderBy('timestamp', 'desc')
+        orderBy('timestamp', 'desc'),
+        limit(100)
       );
       const unsub = onSnapshot(qMsgs, 
         (s) => setMessages(s.docs.map(d => ({ ...d.data(), id: d.id } as MessageType))),
@@ -176,7 +190,8 @@ export default function App() {
       const qSent = query(
         collection(db, 'messages'),
         where('senderId', '==', currentUser.id),
-        orderBy('timestamp', 'desc')
+        orderBy('timestamp', 'desc'),
+        limit(50)
       );
       const unsubSent = onSnapshot(qSent, (s) => {
         const sentMsgs = s.docs.map(d => ({ ...d.data(), id: d.id } as MessageType));
@@ -224,16 +239,36 @@ const handlePhoneSignIn = async (e: FormEvent) => {
 
   const handleLike = async (app: AppEntry) => {
     if (!currentUser) return;
-    const isLiked = app.likes.includes(currentUser.id);
+    const isLiking = !app.likes.includes(currentUser.id);
     const appRef = doc(db, 'apps', app.id);
-    await updateDoc(appRef, {
-      likes: isLiked ? app.likes.filter(id => id !== currentUser.id) : [...app.likes, currentUser.id]
-    });
+    
+    // Optimistic Update: Update UI immediately
+    setApps(prev => prev.map(a => a.id === app.id ? {
+      ...a,
+      likes: isLiking ? [...a.likes, currentUser.id] : a.likes.filter(id => id !== currentUser.id)
+    } : a));
+
+    try {
+      await updateDoc(appRef, {
+        likes: isLiking ? arrayUnion(currentUser.id) : arrayRemove(currentUser.id)
+      });
+    } catch (e) {
+      console.error("Like error:", e);
+      // Revert in case of error
+      setApps(prev => prev.map(a => a.id === app.id ? app : a));
+    }
   };
 
   const handleDownload = async (app: AppEntry) => {
-    await updateDoc(doc(db, 'apps', app.id), { downloads: increment(1) });
-    window.open(app.url, '_blank');
+    // Optimistic download increment
+    setApps(prev => prev.map(a => a.id === app.id ? { ...a, downloads: a.downloads + 1 } : a));
+    
+    try {
+      await updateDoc(doc(db, 'apps', app.id), { downloads: increment(1) });
+      window.open(app.url, '_blank');
+    } catch (e) {
+      console.error("Download error:", e);
+    }
   };
 
   const handleDeleteApp = async (appId: string) => {
@@ -383,6 +418,21 @@ const handlePhoneSignIn = async (e: FormEvent) => {
             </div>
             <h1 className="text-3xl font-bold text-white tracking-tight">{PROJECT_NAME}</h1>
             <p className="text-neutral-500 mt-2">مرحباً بك في عالم التطبيقات</p>
+
+            {connectionError && (
+              <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm flex items-center justify-center gap-3">
+                <Shield size={18} />
+                <div className="flex flex-col">
+                  <span>{connectionError}</span>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="underline text-xs mt-1 font-bold w-fit"
+                  >
+                    إعادة المحاولة
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex bg-neutral-950 p-1 rounded-xl mb-6">
@@ -450,6 +500,18 @@ const handlePhoneSignIn = async (e: FormEvent) => {
 
   return (
     <div className="min-h-screen bg-black pb-24 md:pb-0 md:pr-64">
+      {connectionError && (
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-red-500 text-white py-2 px-4 text-center text-sm font-bold flex items-center justify-center gap-2">
+          <Shield size={16} />
+          <span>{connectionError}</span>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition-colors ml-4"
+          >
+            تحديث الصفحة
+          </button>
+        </div>
+      )}
       {/* Sidebar Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 h-20 bg-neutral-900/80 backdrop-blur-xl border-t border-neutral-800 flex items-center justify-around px-6 z-50 md:top-0 md:right-0 md:left-auto md:w-64 md:h-full md:flex-col md:justify-start md:pt-12 md:px-4 md:border-t-0 md:border-l">
         <div className="hidden md:flex flex-col items-center mb-12">
@@ -1031,6 +1093,7 @@ const AppCard: React.FC<AppCardProps> = ({ app, onLike, onDownload, onDelete, cu
             alt={app.name} 
             className="w-full h-full object-cover z-10"
             referrerPolicy="no-referrer"
+            loading="lazy"
           />
         ) : (
           app.type === 'apk' ? (
