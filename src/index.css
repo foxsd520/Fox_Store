@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --color-fox-orange: #f26522;
+  --color-fox-dark: #1a1a1a;
+}
+
+body {
+  @apply bg-neutral-950 text-white font-sans;
+  direction: rtl;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+@layer components {
+  .form-input {
+    @apply w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-fox-orange transition-all placeholder:text-neutral-600;
+  }
+  .btn-primary {
+    @apply bg-fox-orange text-white font-bold py-3.5 px-6 rounded-xl hover:opacity-90 transition-all shadow-lg shadow-fox-orange/20 active:scale-[0.98];
+  }
+  .btn-secondary {
+    @apply bg-neutral-800 text-white font-bold py-3.5 px-6 rounded-xl hover:bg-neutral-700 transition-all active:scale-[0.98];
+  }
+}

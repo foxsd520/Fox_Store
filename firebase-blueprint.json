@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "enum": ["user", "developer", "owner"] },
+        "phoneNumber": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "email", "name", "role", "createdAt"]
+    },
+    "AppEntry": {
+      "title": "AppEntry",
+      "description": "Information about a published app or link",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "publisherId": { "type": "string" },
+        "publisherName": { "type": "string" },
+        "type": { "enum": ["apk", "link"] },
+        "url": { "type": "string" },
+        "category": { "enum": ["ألعاب", "أدوات"] },
+        "likes": { "type": "array" },
+        "downloads": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" }
+      },
+      "required": ["id", "name", "publisherId", "type", "url", "category", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "User reviews for apps",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "appId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "appId", "userId", "userName", "rating", "comment", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stored user profiles"
+    },
+    "/apps/{appId}": {
+      "schema": "AppEntry",
+      "description": "Stored application entries"
+    },
+    "/apps/{appId}/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Reviews for a specific app"
+    },
+    "/admins/{adminId}": {
+      "schema": { "type": "object", "properties": { "email": { "type": "string" } } },
+      "description": "System administrators"
+    }
+  }
+}
