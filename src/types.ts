@@ -50,5 +50,5 @@ export interface Message {
   timestamp: number;
 }
 
-export const OWNER_EMAIL = 'foxsd520@gmail.com';
+export const OWNER_EMAIL = 'mhmdmhmoud077@gmail.com';
 export const PROJECT_NAME = 'FoxStore_1';

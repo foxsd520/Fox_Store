@@ -1047,22 +1047,47 @@ const AppCard: React.FC<AppCardProps> = ({ app, onLike, onDownload, onDelete, cu
 
   const submitReview = async () => {
     if (!userComment.trim()) return;
-    await addDoc(collection(db, 'apps', app.id, 'reviews'), {
+    
+    // Calculate new stats
+    const newCount = (app.reviewCount || 0) + 1;
+    const userRatingVal = userRating;
+    const userCommentVal = userComment;
+    const newAvg = (((app.rating || 0) * (app.reviewCount || 0)) + userRatingVal) / newCount;
+
+    // Optimistic local state update
+    const tempReview: Review = {
+      id: 'temp-' + Date.now(),
       appId: app.id,
       userId: currentUser.id,
       userName: currentUser.name,
-      rating: userRating,
-      comment: userComment,
+      rating: userRatingVal,
+      comment: userCommentVal,
       createdAt: Date.now()
-    });
-    // Update average rating
-    const newCount = (app.reviewCount || 0) + 1;
-    const newAvg = (((app.rating || 0) * (app.reviewCount || 0)) + userRating) / newCount;
-    await updateDoc(doc(db, 'apps', app.id), {
-      rating: newAvg,
-      reviewCount: newCount
-    });
+    };
+    setReviews(prev => [tempReview, ...prev]);
     setUserComment('');
+
+    try {
+      await addDoc(collection(db, 'apps', app.id, 'reviews'), {
+        appId: app.id,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        rating: userRatingVal,
+        comment: userCommentVal,
+        createdAt: Date.now()
+      });
+      
+      await updateDoc(doc(db, 'apps', app.id), {
+        rating: newAvg,
+        reviewCount: newCount
+      });
+    } catch (e) {
+      console.error("Review submit error:", e);
+      // Revert if it fails
+      setReviews(prev => prev.filter(r => r.id !== tempReview.id));
+      setUserComment(userCommentVal);
+      alert('حدث خطأ أثناء إرسال المراجعة');
+    }
   };
 
   const shareUrl = `${window.location.origin}/?app=${app.id}`;

@@ -17,7 +17,7 @@ service cloud.firestore {
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     function isAdmin() { 
       return isSignedIn() && (
-        request.auth.token.email == 'foxsd520@gmail.com' ||
+        request.auth.token.email == 'mhmdmhmoud077@gmail.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -37,7 +37,7 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
       allow create: if isSignedIn() && isValidUser(incoming()) && 
-                    (incoming().role != 'owner' || request.auth.token.email == 'foxsd520@gmail.com');
+                    (incoming().role != 'owner' || request.auth.token.email == 'mhmdmhmoud077@gmail.com');
       allow update: if (isSignedIn() && (
         (isOwner(userId) && (incoming().role == existing().role || incoming().role == 'developer' || incoming().role == 'user')) || 
         isAdmin()
@@ -105,7 +105,7 @@ service cloud.firestore {
     match /admins/{adminId} {
       // Allow any signed in user to check if someone is an admin
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && (request.auth.token.email == 'foxsd520@gmail.com' || isAdmin());
+      allow create: if isSignedIn() && (request.auth.token.email == 'mhmdmhmoud077@gmail.com' || isAdmin());
       allow update, delete: if isAdmin();
     }
   }
