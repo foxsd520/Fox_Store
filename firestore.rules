@@ -54,9 +54,7 @@ service cloud.firestore {
       }
       allow create: if isSignedIn() && isValidMessage(incoming());
       
-      // Separate list rules to ensure query matching for both sent and received messages
-      allow list: if isSignedIn() && resource.data.receiverId == request.auth.uid;
-      allow list: if isSignedIn() && resource.data.senderId == request.auth.uid;
+      allow list: if isSignedIn() && (resource.data.receiverId == request.auth.uid || resource.data.senderId == request.auth.uid || isAdmin());
       
       allow get: if isSignedIn() && (
         resource.data.receiverId == request.auth.uid || 
@@ -72,7 +70,7 @@ service cloud.firestore {
                data.name is string &&
                data.publisherId is string &&
                data.type in ['apk', 'link'] &&
-               data.category in ['ألعاب', 'أدوات'] &&
+               data.category in ['ألعاب', 'أدوات', 'تواصل', 'تعليم', 'إنتاجية', 'تصوير'] &&
                (data.imageUrl == null || data.imageUrl is string);
       }
 
@@ -107,6 +105,12 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && (request.auth.token.email == 'mhmdmhmoud077@gmail.com' || isAdmin());
       allow update, delete: if isAdmin();
+    }
+
+    // --- Settings Collection ---
+    match /settings/{settingId} {
+      allow read: if true; // Publicly readable for the APK link
+      allow write: if isAdmin();
     }
   }
 }

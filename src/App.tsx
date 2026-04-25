@@ -95,7 +95,18 @@ export default function App() {
   const [selectedApkName, setSelectedApkName] = useState<string | null>(null);
   const [selectedImageName, setSelectedImageName] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [storeApkUrl, setStoreApkUrl] = useState('');
   const recaptchaRef = useRef<HTMLDivElement>(null);
+
+  // Fetch Store APK URL
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'config'), (docSnap) => {
+      if (docSnap.exists()) {
+        setStoreApkUrl(docSnap.data().storeApkUrl || '');
+      }
+    });
+    return unsub;
+  }, []);
 
   // Sync Auth State
   useEffect(() => {
@@ -576,6 +587,74 @@ const handlePhoneSignIn = async (e: FormEvent) => {
               exit={{ opacity: 0, x: 20 }}
             >
               <header className="flex flex-col gap-6 mb-10">
+                {/* Store APK Download Banner */}
+                <div className="bg-gradient-to-r from-fox-orange to-orange-600 rounded-3xl p-6 md:p-10 relative overflow-hidden group shadow-2xl shadow-fox-orange/20">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full translate-x-20 -translate-y-20 group-hover:bg-white/20 transition-all duration-700" />
+                  <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div className="flex-1 text-center md:text-right">
+                      <h3 className="text-2xl md:text-4xl font-black text-white mb-4">حمّل تطبيق {PROJECT_NAME} الأصلي!</h3>
+                      <p className="text-orange-100 text-lg opacity-90 leading-relaxed mb-6">
+                        احصل على تجربة متكاملة، تنزيلات أسرع، وإشعارات فورية بكل جديد من خلال تثبيت تطبيق المتجر الرسمي (APK) على هاتفك.
+                      </p>
+                      <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                        <button 
+                          onClick={() => storeApkUrl ? window.open(storeApkUrl, '_blank') : alert('رابط التحميل غير متوفر حالياً')}
+                          className="bg-white text-fox-orange px-8 py-4 rounded-2xl font-black text-lg hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3"
+                        >
+                          <Smartphone size={24} />
+                          تحميل APK الآن
+                        </button>
+                        <div className="flex items-center gap-2 text-white/80 text-sm font-medium bg-black/10 px-4 py-2 rounded-xl border border-white/10">
+                          <Shield size={16} />
+                          آمن ومفحوص 100%
+                        </div>
+                      </div>
+                    </div>
+                    <div className="w-32 h-32 md:w-48 md:h-48 bg-white/20 backdrop-blur-xl rounded-[2.5rem] flex items-center justify-center border border-white/30 rotate-12 group-hover:rotate-0 transition-transform duration-500 shadow-2xl">
+                      <Shield className="text-white w-20 h-20 md:w-32 md:h-32" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trending Section */}
+                <div className="mb-12">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                       <LayoutGrid className="text-fox-orange" size={20} />
+                       التطبيقات الأكثر رواقاً
+                    </h3>
+                  </div>
+                  <div className="flex overflow-x-auto pb-4 gap-4 scrollbar-hide">
+                    {apps.sort((a, b) => (b.downloads + b.likes.length) - (a.downloads + a.likes.length)).slice(0, 5).map(app => (
+                      <div 
+                        key={app.id} 
+                        onClick={() => window.location.search = `?app=${app.id}`}
+                        className="min-w-[280px] bg-neutral-900 border border-neutral-800 rounded-3xl p-5 cursor-pointer hover:border-fox-orange/50 transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-2xl overflow-hidden bg-neutral-800 shrink-0">
+                             {app.imageUrl ? (
+                               <img src={app.imageUrl} alt={app.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                             ) : (
+                               <div className="w-full h-full flex items-center justify-center text-fox-orange">
+                                 {app.type === 'apk' ? <FileCode size={30} /> : <ExternalLink size={30} />}
+                               </div>
+                             )}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-white group-hover:text-fox-orange transition-colors">{app.name}</h4>
+                            <p className="text-xs text-neutral-500 line-clamp-1">{app.category}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              < Star size={10} fill="#eab308" className="text-yellow-500" />
+                              <span className="text-[10px] text-neutral-400 font-bold">{app.rating?.toFixed(1) || '0.0'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <h2 className="text-3xl font-bold text-white">اكتشف التطبيقات</h2>
                   <div className="flex items-center gap-4 text-neutral-400">
@@ -594,12 +673,12 @@ const handlePhoneSignIn = async (e: FormEvent) => {
                       className="w-full bg-neutral-900 border border-neutral-800 pr-12 pl-4 py-3.5 rounded-2xl text-white focus:outline-none focus:border-fox-orange transition-all"
                     />
                   </div>
-                  <div className="flex bg-neutral-900 p-1 rounded-2xl border border-neutral-800">
-                    {(['الكل', 'ألعاب', 'أدوات'] as const).map((cat) => (
+                  <div className="flex bg-neutral-900 p-1 rounded-2xl border border-neutral-800 overflow-x-auto scrollbar-hide">
+                    {(['الكل', 'ألعاب', 'أدوات', 'تواصل', 'تعليم', 'إنتاجية', 'تصوير'] as const).map((cat) => (
                       <button
                         key={cat}
                         onClick={() => setCategoryFilter(cat)}
-                        className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${categoryFilter === cat ? 'bg-fox-orange text-white shadow-lg shadow-fox-orange/20' : 'text-neutral-500 hover:text-white'}`}
+                        className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${categoryFilter === cat ? 'bg-fox-orange text-white shadow-lg shadow-fox-orange/20' : 'text-neutral-500 hover:text-white'}`}
                       >
                         {cat}
                       </button>
@@ -658,6 +737,10 @@ const handlePhoneSignIn = async (e: FormEvent) => {
                         <select name="category" className="form-input">
                           <option value="ألعاب">ألعاب</option>
                           <option value="أدوات">أدوات</option>
+                          <option value="تواصل">تواصل</option>
+                          <option value="تعليم">تعليم</option>
+                          <option value="إنتاجية">إنتاجية</option>
+                          <option value="تصوير">تصوير</option>
                         </select>
                       </div>
                       <div>
@@ -919,6 +1002,57 @@ const handlePhoneSignIn = async (e: FormEvent) => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Stats Summary Card */}
+                <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 lg:col-span-2">
+                   <h4 className="text-lg font-bold text-white mb-6 border-b border-neutral-800 pb-4">إحصائيات النظام</h4>
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
+                        <p className="text-fox-orange text-3xl font-black mb-1">{users.length}</p>
+                        <p className="text-xs text-neutral-500 font-bold uppercase">إجمالي المستخدمين</p>
+                      </div>
+                      <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
+                        <p className="text-blue-500 text-3xl font-black mb-1">{apps.length}</p>
+                        <p className="text-xs text-neutral-500 font-bold uppercase">إجمالي التطبيقات</p>
+                      </div>
+                      <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
+                        <p className="text-green-500 text-3xl font-black mb-1">{apps.reduce((acc, a) => acc + a.downloads, 0)}</p>
+                        <p className="text-xs text-neutral-500 font-bold uppercase">إجمالي التحميلات</p>
+                      </div>
+                      <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
+                        <p className="text-yellow-500 text-3xl font-black mb-1">{apps.reduce((acc, a) => acc + a.likes.length, 0)}</p>
+                        <p className="text-xs text-neutral-500 font-bold uppercase">إجمالي الإعجابات</p>
+                      </div>
+                   </div>
+                </div>
+
+                {/* Store APK Config Card */}
+                <div className="bg-neutral-900 border border-fox-orange rounded-3xl p-6">
+                  <h4 className="text-lg font-bold text-white mb-6 border-b border-neutral-800 pb-4 flex items-center gap-2">
+                      <Smartphone className="text-fox-orange" size={20} />
+                      رابط ملف APK المتجر
+                  </h4>
+                  <form 
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const url = (e.currentTarget.elements.namedItem('apkUrl') as HTMLInputElement).value;
+                      await setDoc(doc(db, 'settings', 'config'), { storeApkUrl: url }, { merge: true });
+                      alert('تم تحديث رابط المتجر بنجاح');
+                    }}
+                    className="space-y-4"
+                  >
+                    <input 
+                      name="apkUrl" 
+                      defaultValue={storeApkUrl} 
+                      placeholder="أدخل رابط ملف APK الخاص بالمتجر هنا..." 
+                      className="form-input" 
+                    />
+                    <button type="submit" className="btn-primary w-full py-3">تحديث الرابط العام</button>
+                  </form>
+                  <p className="text-[10px] text-neutral-500 mt-4 leading-relaxed">
+                    * هذا الرابط سيظهر لجميع المستخدمين في البانر العلوي للمتجر. تأكد من رفع الملف أولاً والحصول على الرابط المباشر.
+                  </p>
+                </div>
+
                 <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6">
                   <h4 className="text-lg font-bold text-white mb-6 border-b border-neutral-800 pb-4">إدارة المستخدمين</h4>
                   <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
@@ -1200,7 +1334,7 @@ const AppCard: React.FC<AppCardProps> = ({ app, onLike, onDownload, onDelete, cu
           </div>
           
           <div className="flex items-center gap-2">
-            {(currentUser.role === 'owner' || app.publisherId === currentUser.id) && (
+            {(currentUser && (currentUser.role === 'owner' || currentUser.email === OWNER_EMAIL || app.publisherId === currentUser.id)) && (
               <button 
                 onClick={onDelete}
                 className="p-2 text-neutral-600 hover:text-red-500 hover:bg-neutral-800 rounded-xl transition-all"

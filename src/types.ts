@@ -22,7 +22,7 @@ export interface AppEntry {
   publisherName: string;
   type: 'apk' | 'link';
   url: string; 
-  category: 'ألعاب' | 'أدوات';
+  category: 'ألعاب' | 'أدوات' | 'تواصل' | 'تعليم' | 'إنتاجية' | 'تصوير';
   imageUrl?: string;
   likes: string[]; 
   downloads: number;
